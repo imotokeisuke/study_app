@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="学習計画">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f6f1e7">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>学習計画</title>
+<style>
+:root{--paper:#f6f1e7;--ink:#26324a;--sub:#7a7f8c;--line:#ddd5c3;--card:#fffdf8;--green:#cfe8c9;--greenb:#5a9a56;--acc:#2f5d8a}
+@media(prefers-color-scheme:dark){:root{--paper:#1c1f26;--ink:#e8e6df;--sub:#9a9ea8;--line:#3a3f4a;--card:#262a33;--green:#2f4a2e;--greenb:#6fb36a;--acc:#7fb0e0}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--paper);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;font-size:16px}
+#main{padding:env(safe-area-inset-top) 14px 96px;max-width:640px;margin:0 auto}
+header{display:flex;align-items:center;gap:8px;padding:12px 0 4px}
+#title{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:700 22px/1.3 "Hiragino Mincho ProN","Yu Mincho",serif;border-bottom:1px dashed var(--line);padding:2px 0}
+.zb{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:15px;font-weight:700}
+#curbook{color:var(--sub);font-size:13px;margin:0 0 10px}
+section{display:none}section.on{display:block}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:14px}
+.row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+input,select,textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px}
+textarea{min-height:90px}
+button{font:inherit;cursor:pointer}
+.btn{border:0;background:var(--acc);color:#fff;border-radius:8px;padding:10px 16px;font-weight:700;white-space:nowrap}
+.btn.ghost{background:transparent;color:var(--acc);border:1px solid var(--acc)}
+.btn.del{background:#b4473d}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex:none}
+.seg label{padding:9px 14px;cursor:pointer;font-weight:600}
+.seg input{display:none;width:auto}
+.seg input:checked+span{color:#fff}
+.seg label:has(input:checked){background:var(--acc);color:#fff}
+.chap{border:2px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:14px;overflow:hidden}
+.chead{display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(47,93,138,.1);border-bottom:2px solid var(--line)}
+.cname{flex:1;font-weight:700;min-width:0;word-break:break-all}
+.cnt{font-weight:700;color:var(--acc);font-variant-numeric:tabular-nums}
+.ib{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:8px;min-width:34px;height:32px;font-size:14px}
+.item{display:flex;align-items:center;gap:8px;margin:8px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+.item.done{background:var(--green);border-color:var(--greenb)}
+.ibody{flex:1;min-width:0}
+.iname{font-weight:600;word-break:break-all}
+.idate{font-size:12px;color:var(--sub)}
+.imemo{font-size:13px;color:var(--sub);white-space:pre-wrap;word-break:break-all;margin-top:2px;max-height:3.9em;overflow:hidden}
+a{color:var(--acc);text-decoration:underline}
+.empty{color:var(--sub);text-align:center;padding:30px 10px;line-height:1.7}
+.sw{display:flex;flex-wrap:wrap;gap:10px;margin:6px 0 12px}
+.sw button{width:38px;height:38px;border-radius:50%;border:3px solid transparent}
+.sw button.sel{border-color:var(--ink)}
+.shelf{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.book{position:relative;border-radius:4px 10px 10px 4px;padding:16px 12px 12px 20px;min-height:130px;color:#fff;box-shadow:inset 8px 0 0 rgba(0,0,0,.18),0 2px 4px rgba(0,0,0,.2);display:flex;flex-direction:column;justify-content:space-between;cursor:pointer}
+.book b{font-size:16px;line-height:1.4;word-break:break-all;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+.book small{opacity:.9}
+.book .ib{align-self:flex-end;background:rgba(255,255,255,.25);color:#fff;border-color:rgba(255,255,255,.5)}
+.book.cur{outline:3px solid var(--ink);outline-offset:2px}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:none;color:var(--sub);padding:10px 0 8px;font-size:12px;font-weight:600}
+nav button span{display:block;font-size:20px}
+nav button.on{color:var(--acc)}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:9}
+#modal.on{display:flex}
+#sheet{background:var(--card);width:100%;max-width:640px;border-radius:16px 16px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));max-height:90%;overflow:auto}
+#sheet h3{margin:0 0 10px;font-size:17px}
+#sheet label.l{display:block;font-size:13px;color:var(--sub);margin:8px 0 4px}
+.small{font-size:12px;color:var(--sub);line-height:1.6}
+</style>
+</head>
+<body>
+<div id="main">
+  <header>
+    <input id="title" aria-label="タイトル" maxlength="30">
+    <button class="zb" id="zo" aria-label="縮小">A−</button>
+    <button class="zb" id="zi" aria-label="拡大">A+</button>
+  </header>
+  <p id="curbook"></p>
+
+  <section id="s-text">
+    <div class="panel" id="addp">
+      <div class="row">
+        <div class="seg"><label><input type="radio" name="kind" value="chap" checked><span>章</span></label><label><input type="radio" name="kind" value="item"><span>項目</span></label></div>
+        <select id="chapSel" style="display:none"></select>
+      </div>
+      <div class="row"><input id="newName" placeholder="名称を入力" maxlength="60"><button class="btn" id="addBtn">追加</button></div>
+      <div class="row" style="margin:0"><button class="btn ghost" id="reBtn" style="padding:6px 12px">並べ替え</button><span class="small">オンにすると ▲▼ で順番を変えられます</span></div>
+    </div>
+    <div id="tree"></div>
+  </section>
+
+  <section id="s-make">
+    <div class="panel">
+      <label class="small">教科書の名称</label>
+      <input id="bookName" placeholder="例：一級建築士 計画" maxlength="40" style="margin:4px 0 10px">
+      <label class="small">本の色</label>
+      <div class="sw" id="swMake"></div>
+      <button class="btn" id="makeBtn" style="width:100%">教科書を作成</button>
+    </div>
+  </section>
+
+  <section id="s-shelf">
+    <div id="shelf"></div>
+    <div class="panel" style="margin-top:18px">
+      <div class="small" style="margin-bottom:8px">データはこの端末のSafariに保存されます。念のためバックアップを残せます。</div>
+      <div class="row" style="margin:0"><button class="btn ghost" id="exBtn" style="flex:1">書き出し</button><button class="btn ghost" id="imBtn" style="flex:1">読み込み</button></div>
+      <input type="file" id="imFile" accept="application/json,.json" style="display:none">
+    </div>
+  </section>
+</div>
+
+<nav>
+  <button data-tab="text"><span>📖</span>教科書</button>
+  <button data-tab="make"><span>✏️</span>作成</button>
+  <button data-tab="shelf"><span>📚</span>本棚</button>
+</nav>
+<div id="modal"><div id="sheet"></div></div>
+
+<script>
+(function(){
+var K='gakushu_v1',COLORS=['#2f5d8a','#b4473d','#3f8a5a','#c98a2b','#7a4f9a','#3b8c96','#8a5a44','#4a4f5c'];
+var S=load(),tab='text',reorder=false,mkColor=COLORS[0];
+var $=function(s){return document.querySelector(s)};
+function load(){var ks=[K,K+'_bak'];for(var i=0;i<ks.length;i++){try{var d=JSON.parse(localStorage.getItem(ks[i]));if(d&&d.books)return d}catch(e){}}return{title:'学習計画',books:[],cur:null,zoom:1}}
+function save(){try{var o=localStorage.getItem(K);if(o)localStorage.setItem(K+'_bak',o);localStorage.setItem(K,JSON.stringify(S))}catch(e){alert('保存に失敗しました。空き容量を確認してください。')}}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function link(s){return esc(s).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener" data-lk="1">$1</a>')}
+function book(){for(var i=0;i<S.books.length;i++)if(S.books[i].id===S.cur)return S.books[i];return null}
+function mv(a,i,d){var j=i+d;if(j<0||j>=a.length)return;var t=a[i];a[i]=a[j];a[j]=t}
+function fmt(d){if(!d)return'';var p=d.split('-');return p[0]+'年'+(+p[1])+'月'+(+p[2])+'日'}
+
+function render(){
+  $('#title').value=S.title;
+  document.title=S.title;
+  $('#main').style.zoom=S.zoom;
+  var b=book();
+  $('#curbook').textContent=b?'📖 '+b.name:'';
+  ['text','make','shelf'].forEach(function(t){$('#s-'+t).classList.toggle('on',t===tab)});
+  document.querySelectorAll('nav button').forEach(function(x){x.classList.toggle('on',x.dataset.tab===tab)});
+  renderText();renderMake();renderShelf();
+}
+
+function renderText(){
+  var b=book(),t=$('#tree');
+  $('#addp').style.display=b?'':'none';
+  $('#reBtn').style.background=reorder?'var(--acc)':'';
+  $('#reBtn').style.color=reorder?'#fff':'';
+  if(!b){t.innerHTML='<div class="empty">教科書がまだありません。<br>「作成」タブで作るか、「本棚」から選んでください。</div>';return}
+  var sel=$('#chapSel'),old=sel.value;
+  sel.innerHTML=b.chapters.map(function(c){return'<option value="'+c.id+'">'+esc(c.name)+'</option>'}).join('');
+  if(old)sel.value=old;
+  if(!b.chapters.length){t.innerHTML='<div class="empty">最初に「章」を追加しましょう。</div>';return}
+  t.innerHTML=b.chapters.map(function(c,ci){
+    var n=c.items.filter(function(x){return x.date}).length;
+    var items=c.items.map(function(it,ii){
+      return'<div class="item'+(it.date?' done':'')+'" data-act="item" data-c="'+c.id+'" data-i="'+it.id+'"><div class="ibody"><div class="iname">'+esc(it.name)+'</div>'+(it.date?'<div class="idate">✔ '+fmt(it.date)+'</div>':'')+(it.memo?'<div class="imemo">'+link(it.memo)+'</div>':'')+'</div>'+
+      (reorder?'<button class="ib" data-act="iup" data-c="'+c.id+'" data-n="'+ii+'">▲</button><button class="ib" data-act="idn" data-c="'+c.id+'" data-n="'+ii+'">▼</button>':'')+'</div>'}).join('');
+    return'<div class="chap"><div class="chead"><div class="cname">'+esc(c.name)+'</div><div class="cnt">'+n+'/'+c.items.length+'</div>'+
+      (reorder?'<button class="ib" data-act="cup" data-n="'+ci+'">▲</button><button class="ib" data-act="cdn" data-n="'+ci+'">▼</button>':'')+
+      '<button class="ib" data-act="cedit" data-c="'+c.id+'">編集</button></div>'+(items||'<div class="small" style="padding:10px">項目がありません</div>')+'</div>'}).join('');
+}
+
+function renderMake(){
+  $('#swMake').innerHTML=COLORS.map(function(c){return'<button data-act="mk" data-col="'+c+'" class="'+(c===mkColor?'sel':'')+'" style="background:'+c+'" aria-label="色"></button>'}).join('');
+}
+
+function renderShelf(){
+  var h=$('#shelf');
+  if(!S.books.length){h.innerHTML='<div class="empty">本棚は空です。<br>「作成」タブで教科書を作りましょう。</div>';return}
+  h.innerHTML='<div class="shelf">'+S.books.map(function(b){
+    var tot=0,dn=0;b.chapters.forEach(function(c){tot+=c.items.length;dn+=c.items.filter(function(x){return x.date}).length});
+    return'<div class="book'+(b.id===S.cur?' cur':'')+'" style="background:'+b.color+'" data-act="open" data-b="'+b.id+'"><b>'+esc(b.name)+'</b><small>'+dn+'/'+tot+' 学習済み</small><button class="ib" data-act="bedit" data-b="'+b.id+'">編集</button></div>'}).join('')+'</div>';
+}
+
+function modal(h){$('#sheet').innerHTML=h;$('#modal').classList.add('on')}
+function closeM(){$('#modal').classList.remove('on')}
+function findC(id){var b=book();for(var i=0;i<b.chapters.length;i++)if(b.chapters[i].id===id)return b.chapters[i]}
+
+function itemModal(cid,iid){
+  var c=findC(cid),it=c.items.filter(function(x){return x.id===iid})[0];
+  modal('<h3>項目を編集</h3><label class="l">名称</label><input id="m-name" value="'+esc(it.name)+'"><label class="l">学習した日付</label><div class="row"><input type="date" id="m-date" value="'+esc(it.date||'')+'"><button class="btn ghost" id="m-today">今日</button></div><label class="l">メモ（URLはリンクになります）</label><textarea id="m-memo">'+esc(it.memo||'')+'</textarea><div class="small" id="m-links"></div><div class="row" style="margin-top:12px"><button class="btn del" id="m-del">削除</button><button class="btn ghost" id="m-cancel" style="flex:1">閉じる</button><button class="btn" id="m-save" style="flex:1">保存</button></div>');
+  var show=function(){var m=$('#m-memo').value;$('#m-links').innerHTML=/https?:\/\//.test(m)?'リンク：<br>'+link(m).split('\n').filter(function(l){return l.indexOf('<a')>-1}).join('<br>'):''};
+  show();$('#m-memo').oninput=show;
+  $('#m-today').onclick=function(){var d=new Date();$('#m-date').value=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)};
+  $('#m-cancel').onclick=closeM;
+  $('#m-save').onclick=function(){it.name=$('#m-name').value.trim()||it.name;it.date=$('#m-date').value;it.memo=$('#m-memo').value;save();closeM();render()};
+  $('#m-del').onclick=function(){if(confirm('この項目を削除しますか？')){c.items=c.items.filter(function(x){return x!==it});save();closeM();render()}};
+}
+function chapModal(cid){
+  var c=findC(cid);
+  modal('<h3>章を編集</h3><label class="l">名称</label><input id="m-name" value="'+esc(c.name)+'"><div class="small" style="margin-top:8px">削除すると章内の項目もすべて消えます。</div><div class="row" style="margin-top:12px"><button class="btn del" id="m-del">削除</button><button class="btn ghost" id="m-cancel" style="flex:1">閉じる</button><button class="btn" id="m-save" style="flex:1">保存</button></div>');
+  $('#m-cancel').onclick=closeM;
+  $('#m-save').onclick=function(){c.name=$('#m-name').value.trim()||c.name;save();closeM();render()};
+  $('#m-del').onclick=function(){if(confirm('この章と中の項目を削除しますか？')){var b=book();b.chapters=b.chapters.filter(function(x){return x!==c});save();closeM();render()}};
+}
+function bookModal(bid){
+  var b=S.books.filter(function(x){return x.id===bid})[0],col=b.color;
+  modal('<h3>教科書を編集</h3><label class="l">名称</label><input id="m-name" value="'+esc(b.name)+'"><label class="l">本の色</label><div class="sw" id="m-sw"></div><div class="row"><button class="btn del" id="m-del">削除</button><button class="btn ghost" id="m-cancel" style="flex:1">閉じる</button><button class="btn" id="m-save" style="flex:1">保存</button></div>');
+  var paint=function(){$('#m-sw').innerHTML=COLORS.map(function(c){return'<button data-col="'+c+'" class="'+(c===col?'sel':'')+'" style="background:'+c+'"></button>'}).join('')};
+  paint();
+  $('#m-sw').onclick=function(e){var c=e.target.dataset.col;if(c){col=c;paint()}};
+  $('#m-cancel').onclick=closeM;
+  $('#m-save').onclick=function(){b.name=$('#m-name').value.trim()||b.name;b.color=col;save();closeM();render()};
+  $('#m-del').onclick=function(){if(confirm('「'+b.name+'」を削除しますか？中の章・項目も消えます。')){S.books=S.books.filter(function(x){return x!==b});if(S.cur===b.id)S.cur=S.books.length?S.books[0].id:null;save();closeM();render()}};
+}
+
+document.addEventListener('click',function(e){
+  if(e.target.closest('a[data-lk]'))return;
+  var el=e.target.closest('[data-act]');if(!el)return;
+  var a=el.dataset.act,b=book();
+  if(e.target.closest('button.ib')&&a==='open')return;
+  if(a==='item')itemModal(el.dataset.c,el.dataset.i);
+  else if(a==='cedit')chapModal(el.dataset.c);
+  else if(a==='iup'||a==='idn'){e.stopPropagation();mv(findC(el.dataset.c).items,+el.dataset.n,a==='iup'?-1:1);save();render()}
+  else if(a==='cup'||a==='cdn'){mv(b.chapters,+el.dataset.n,a==='cup'?-1:1);save();render()}
+  else if(a==='mk'){mkColor=el.dataset.col;renderMake()}
+  else if(a==='bedit'){e.stopPropagation();bookModal(el.dataset.b)}
+  else if(a==='open'){S.cur=el.dataset.b;save();tab='text';render();window.scrollTo(0,0)}
+});
+$('#modal').addEventListener('click',function(e){if(e.target.id==='modal')closeM()});
+document.querySelectorAll('nav button').forEach(function(x){x.onclick=function(){tab=x.dataset.tab;render();window.scrollTo(0,0)}});
+document.querySelectorAll('input[name=kind]').forEach(function(r){r.onchange=function(){$('#chapSel').style.display=r.value==='item'&&r.checked?'':'none'}});
+$('#reBtn').onclick=function(){reorder=!reorder;render()};
+$('#title').onchange=function(){S.title=this.value.trim()||'学習計画';save();render()};
+$('#zi').onclick=function(){S.zoom=Math.min(1.8,Math.round((S.zoom+0.1)*10)/10);save();render()};
+$('#zo').onclick=function(){S.zoom=Math.max(0.7,Math.round((S.zoom-0.1)*10)/10);save();render()};
+
+$('#addBtn').onclick=function(){
+  var b=book(),n=$('#newName').value.trim();if(!b||!n)return;
+  var kind=document.querySelector('input[name=kind]:checked').value;
+  if(kind==='chap'){b.chapters.push({id:uid(),name:n,items:[]})}
+  else{var c=findC($('#chapSel').value);if(!c){alert('先に章を追加してください');return}c.items.push({id:uid(),name:n,date:'',memo:''})}
+  $('#newName').value='';save();render();
+};
+$('#makeBtn').onclick=function(){
+  var n=$('#bookName').value.trim();if(!n){alert('名称を入力してください');return}
+  var b={id:uid(),name:n,color:mkColor,chapters:[]};S.books.push(b);S.cur=b.id;
+  $('#bookName').value='';save();tab='text';render();
+};
+$('#exBtn').onclick=function(){
+  var u=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'})),a=document.createElement('a');
+  a.href=u;a.download='gakushu-backup.json';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},3000);
+};
+$('#imBtn').onclick=function(){$('#imFile').click()};
+$('#imFile').onchange=function(){
+  var f=this.files[0];if(!f)return;var r=new FileReader();
+  r.onload=function(){try{var d=JSON.parse(r.result);if(!d.books)throw 0;if(confirm('現在のデータを置き換えて読み込みますか？')){S=d;save();render()}}catch(e){alert('読み込めないファイルです')}};
+  r.readAsText(f);this.value='';
+};
+
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
+if('serviceWorker'in navigator)window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js')});
+render();
+})();
+</script>
+</body>
+</html>
