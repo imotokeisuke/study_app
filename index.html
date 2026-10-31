@@ -94,6 +94,7 @@ nav button.on{color:var(--acc)}
         <button class="btn ghost sm" id="closeAll">すべて折りたたむ</button>
       </div>
     </div>
+    <input id="q1" type="search" placeholder="🔍 教科書内を検索（名称・メモ）" style="margin-bottom:12px">
     <div id="tree"></div>
   </section>
 
@@ -108,6 +109,7 @@ nav button.on{color:var(--acc)}
   </section>
 
   <section id="s-shelf">
+    <input id="q2" type="search" placeholder="🔍 本棚を検索（教科書名・項目・メモ）" style="margin-bottom:12px">
     <div id="shelf"></div>
     <div class="panel" style="margin-top:18px">
       <div class="small" style="margin-bottom:8px">データはこの端末のSafariに保存されます。念のためバックアップを残せます。</div>
@@ -128,6 +130,7 @@ nav button.on{color:var(--acc)}
 (function(){
 var K='gakushu_v1',COLORS=['#2f5d8a','#b4473d','#3f8a5a','#c98a2b','#7a4f9a','#3b8c96','#8a5a44','#4a4f5c'];
 var DU=['編','章','節','款','条','項','号','部','単元','問'],DL=['法','政令','省令','告示','条例','規則'];
+var q={text:'',shelf:''};
 var S=migrate(load()),tab='text',reorder=false,mkColor=COLORS[0];
 var form={t:'n',unit:'章',num:1,name:'',law:'法',parts:[['条',1]],parent:''};
 var $=function(s){return document.querySelector(s)};
@@ -149,7 +152,7 @@ function book(){for(var i=0;i<S.books.length;i++)if(S.books[i].id===S.cur)return
 function mv(a,i,d){var j=i+d;if(j<0||j>=a.length)return;var t=a[i];a[i]=a[j];a[j]=t}
 function fmt(d){if(!d)return'';var p=d.split('-');return p[0]+'年'+(+p[1])+'月'+(+p[2])+'日'}
 function label(n){
-  if(n.t==='l')return n.law+n.parts.map(function(p){return'第'+p[1]+p[0]}).join('');
+  if(n.t==='l')return n.law+n.parts.map(function(p){return'第'+p[1]+p[0]}).join('')+(n.name?' '+n.name:'');
   return(n.num?n.num+n.unit:'')+(n.name?(n.num?' ':'')+n.name:'')||'(無題)';
 }
 function cmp(a,b){
@@ -178,14 +181,16 @@ function render(){
   renderText();renderMake();renderShelf();
 }
 
-function nodeHTML(n,arr,i,dep){
-  var has=n.ch.length>0,s=has?stat(n):null,done=has?(s.t>0&&s.d===s.t):!!n.date;
+function hit(n){var s=q.text;return!!s&&(label(n).toLowerCase().indexOf(s)>-1||n.memo.toLowerCase().indexOf(s)>-1)}
+function sub(n){return hit(n)||n.ch.some(sub)}
+function nodeHTML(n,arr,i,dep,all){
+  var self=hit(n);if(q.text&&!all&&!sub(n))return'';var open=q.text?true:n.open;var has=n.ch.length>0,s=has?stat(n):null,done=has?(s.t>0&&s.d===s.t):!!n.date;
   var h='<div class="nd"><div class="nrow'+(dep===0?' top':'')+(done?' done':'')+'">'+
-    (has?'<button class="tg" data-act="tg" data-id="'+n.id+'">'+(n.open?'▼':'▶')+'</button>':'<span class="tg"></span>')+
-    '<div class="ibody" data-act="edit" data-id="'+n.id+'"><div class="iname">'+esc(label(n))+'</div>'+(n.date?'<div class="idate">✔ '+fmt(n.date)+'</div>':'')+(n.memo?'<div class="imemo">'+link(n.memo)+'</div>':'')+'</div>'+
+    (has?'<button class="tg" data-act="tg" data-id="'+n.id+'">'+(open?'▼':'▶')+'</button>':'<span class="tg"></span>')+
+    '<div class="ibody" data-act="edit" data-id="'+n.id+'"><div class="iname">'+esc(label(n))+'</div>'+(n.date?'<div class="idate">✔ '+fmt(n.date)+'</div>':'')+(q.text&&n.memo&&n.memo.toLowerCase().indexOf(q.text)>-1?'<div class="idate">📝 メモに一致</div>':'')+'</div>'+
     (has?'<div class="cnt">'+s.d+'/'+s.t+'</div>':'')+
     (reorder&&n.t!=='l'?'<button class="ib" data-act="up" data-id="'+n.id+'">▲</button><button class="ib" data-act="dn" data-id="'+n.id+'">▼</button>':'')+'</div>';
-  if(has&&n.open)h+='<div class="kids">'+n.ch.map(function(c,j){return nodeHTML(c,n.ch,j,dep+1)}).join('')+'</div>';
+  if(has&&open)h+='<div class="kids">'+n.ch.map(function(c,j){return nodeHTML(c,n.ch,j,dep+1,all||self)}).join('')+'</div>';
   return h+'</div>';
 }
 
@@ -193,14 +198,21 @@ function renderText(){
   var b=book(),t=$('#tree');
   $('#addp').style.display=b?'':'none';
   $('#reBtn').classList.toggle('on',reorder);
-  if(!b){t.innerHTML='<div class="empty">教科書がまだありません。<br>「作成」タブで作るか、「本棚」から選んでください。</div>';return}
+  if(!b){$('#q1').style.display='none';t.innerHTML='<div class="empty">教科書がまだありません。<br>「作成」タブで作るか、「本棚」から選んでください。</div>';return}
   var o='<option value="">最上位</option>';
   walk(b.nodes,function(n,d){o+='<option value="'+n.id+'">'+'　'.repeat(d)+esc(label(n))+'</option>'});
   var ps=$('#parentSel');ps.innerHTML=o;
   if(form.parent&&!locate(form.parent))form.parent='';
   ps.value=form.parent;
   editor($('#ed'),form);
-  t.innerHTML=b.nodes.length?b.nodes.map(function(n,i){return nodeHTML(n,b.nodes,i,0)}).join(''):'<div class="empty">上のフォームから、最初の階層を追加しましょう。<br>（例：1章、第1編 など）</div>';
+  renderTree();
+}
+function renderTree(){
+  var b=book(),t=$('#tree');if(!b)return;
+  $('#q1').style.display=b.nodes.length?'':'none';
+  if(!b.nodes.length){t.innerHTML='<div class="empty">上のフォームから、最初の階層を追加しましょう。<br>（例：1章、第1編 など）</div>';return}
+  var h=b.nodes.map(function(n,i){return nodeHTML(n,b.nodes,i,0,false)}).join('');
+  t.innerHTML=h||'<div class="empty">「'+esc($('#q1').value)+'」に一致する項目はありません。</div>';
 }
 
 function opts(arr,sel){return arr.map(function(x){return'<option'+(x===sel?' selected':'')+'>'+esc(x)+'</option>'}).join('')}
@@ -216,7 +228,7 @@ function editor(host,st){
     st.parts.forEach(function(p,i){
       h+='<div class="row"><span>第</span><select data-f="pn" data-i="'+i+'" style="flex:1">'+nums(300,p[1])+'</select><select data-f="pu" data-i="'+i+'" style="flex:1">'+opts(S.units,p[0])+'</select>'+(st.parts.length>1?'<button class="plus" data-f="pdel" data-i="'+i+'" style="font-size:14px">✕</button>':'')+'</div>';
     });
-    h+='<button class="btn ghost sm" data-f="padd" style="margin-bottom:8px">＋ 項・号などを追加</button><div class="pv">'+esc(label(st))+'</div>';
+    h+='<button class="btn ghost sm" data-f="padd" style="margin-bottom:8px">＋ 項・号などを追加</button><input data-f="name" placeholder="タイトル（任意）例：建築物の敷地" maxlength="60" value="'+esc(st.name)+'" style="margin-bottom:8px"><div class="pv" id="pv">'+esc(label(st))+'</div>';
   }
   host.innerHTML=h;
   var re=function(){editor(host,st)};
@@ -235,7 +247,7 @@ function editor(host,st){
     else return;
     re();
   };
-  host.oninput=function(e){if(e.target.dataset.f==='name')st.name=e.target.value};
+  host.oninput=function(e){if(e.target.dataset.f==='name'){st.name=e.target.value;var pv=host.querySelector('#pv');if(pv)pv.textContent=label(st)}};
 }
 
 function modal(h){$('#sheet').innerHTML=h;$('#modal').classList.add('on')}
@@ -274,8 +286,11 @@ function bookModal(bid){
 function renderMake(){$('#swMake').innerHTML=COLORS.map(function(c){return'<button data-act="mk" data-col="'+c+'" class="'+(c===mkColor?'sel':'')+'" style="background:'+c+'" aria-label="色"></button>'}).join('')}
 function renderShelf(){
   var h=$('#shelf');
-  if(!S.books.length){h.innerHTML='<div class="empty">本棚は空です。<br>「作成」タブで教科書を作りましょう。</div>';return}
-  h.innerHTML='<div class="shelf">'+S.books.map(function(b){
+  if(!S.books.length){h.innerHTML='<div class="empty">本棚は空です。<br>「作成」タブで教科書を作りましょう。</div>';$('#q2').style.display='none';return}
+  $('#q2').style.display='';
+  var bs=S.books.filter(function(b){if(!q.shelf)return true;var m=b.name.toLowerCase().indexOf(q.shelf)>-1;walk(b.nodes,function(n){if(label(n).toLowerCase().indexOf(q.shelf)>-1||n.memo.toLowerCase().indexOf(q.shelf)>-1)m=true});return m});
+  if(!bs.length){h.innerHTML='<div class="empty">一致する教科書はありません。</div>';return}
+  h.innerHTML='<div class="shelf">'+bs.map(function(b){
     var s=stat({ch:b.nodes});
     return'<div class="book'+(b.id===S.cur?' cur':'')+'" style="background:'+b.color+'" data-act="open" data-b="'+b.id+'"><b>'+esc(b.name)+'</b><small>'+s.d+'/'+s.t+' 学習済み</small><button class="ib" data-act="bedit" data-b="'+b.id+'">編集</button></div>'}).join('')+'</div>';
 }
@@ -295,6 +310,8 @@ $('#modal').addEventListener('click',function(e){if(e.target.id==='modal')closeM
 $('#curbook').onclick=function(){if(S.cur)bookModal(S.cur)};
 document.querySelectorAll('nav button').forEach(function(x){x.onclick=function(){tab=x.dataset.tab;render();window.scrollTo(0,0)}});
 $('#parentSel').onchange=function(){form.parent=this.value};
+$('#q1').oninput=function(){q.text=this.value.trim().toLowerCase();renderTree()};
+$('#q2').oninput=function(){q.shelf=this.value.trim().toLowerCase();renderShelf()};
 $('#reBtn').onclick=function(){reorder=!reorder;render()};
 function setAll(v){walk(book().nodes,function(n){n.open=v});save();render()}
 $('#openAll').onclick=function(){setAll(true)};
